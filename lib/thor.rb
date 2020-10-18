@@ -66,8 +66,15 @@ class Thor
 
     # Defines the long description of the next command.
     #
+    # Long description is by default indented, line-wrapped and repeated whitespace merged.
+    # In order to print long description verbatim, with indentation and spacing exactly
+    # as found in the code, use the +wrap+ option
+    #
+    #   long_desc 'your very long description', wrap: false
+    #
     # ==== Parameters
     # long description<String>
+    # options<Hash>
     #
     def long_desc(long_description, options = {})
       if options[:for]
@@ -75,6 +82,7 @@ class Thor
         command.long_description = long_description if long_description
       else
         @long_desc = long_description
+        @long_desc_wrap = options[:wrap] || options[:wrap].nil?
       end
     end
 
@@ -181,7 +189,11 @@ class Thor
       class_options_help(shell, nil => command.options.values)
       if command.long_description
         shell.say "Description:"
-        shell.print_wrapped(command.long_description, :indent => 2)
+        if command.wrap_long_description
+          shell.print_wrapped(command.long_description, :indent => 2)
+        else
+          shell.say command.long_description
+        end
       else
         shell.say command.description
       end
@@ -416,12 +428,13 @@ class Thor
       @usage ||= nil
       @desc ||= nil
       @long_desc ||= nil
+      @long_desc_wrap ||= nil
       @hide ||= nil
 
       if @usage && @desc
         base_class = @hide ? Thor::HiddenCommand : Thor::Command
-        commands[meth] = base_class.new(meth, @desc, @long_desc, @usage, method_options)
-        @usage, @desc, @long_desc, @method_options, @hide = nil
+        commands[meth] = base_class.new(meth, @desc, @long_desc, @long_desc_wrap, @usage, method_options)
+        @usage, @desc, @long_desc, @long_desc_wrap, @method_options, @hide = nil
         true
       elsif all_commands[meth] || meth == "method_missing"
         true
